@@ -1,78 +1,82 @@
 import { useGetPrice } from "../api/prices";
-import { useCallback, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { transformDate } from "../utils/date";
 
-const  CoinPrice = ({ coin, savedCoins, setSavedCoins }) => {
+const CoinPrice = ({ coin, savedCoins, setSavedCoins }) => {
   const { data: price } = useGetPrice(coin);
 
-  const proccentFunc = () => {
-    const total = savedCoins.find((searchCoin) => searchCoin.coin === coin)?.price;
-    const part = price?.data?.result?.list[0]?.indexPrice;
-
-    const result = total ? ((part - total) / total) * 100 : 0;
-    return result.toFixed(2);
-  };
-
-
-  const saveCoin = () => {
-    const date = new Date();
-    console.log("function was called", transformDate(date));
-
-    setSavedCoins((prev) =>
-      prev.map((searchCoin) =>
-        searchCoin.coin === coin
-          ? {
-              ...searchCoin,
-              price: price?.data?.result?.list[0]?.indexPrice || searchCoin.price,
-              date: transformDate(date),
-              pricesHistory: [
-                ...searchCoin.pricesHistory,
-                { price: price?.data?.result?.list[0]?.indexPrice || 0, date: transformDate(date) }
-              ],
-            }
-          : searchCoin
-      )
-    );
-  };
+  const proccentFuncRef = useRef();
+  const saveCoinRef = useRef();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      console.log("Setting up timeout");
-      saveCoin();
-      // savePricesLog()
-    }, 3000); // тут в майбтуньому думаю 10хв +-
+    // Function to calculate percentage difference
+    proccentFuncRef.current = () => {
+      const total = savedCoins.find((searchCoin) => searchCoin.coin === coin)?.price;
+      const part = price?.data?.result?.list[0]?.indexPrice;
+      const result = total ? ((part - total) / total) * 100 : 0;
+      return result.toFixed(2);
+    };
 
-    return () => clearInterval(interval);
-  }, [price]);
+    // Function to save the coin data
+    saveCoinRef.current = () => {
+      const date = new Date();  
+      console.log("Function saveCoin was called", transformDate(date));
 
-  useEffect(() => {
-    const interval = setInterval(() => {
       setSavedCoins((prev) =>
         prev.map((searchCoin) =>
           searchCoin.coin === coin
             ? {
                 ...searchCoin,
-                difference: proccentFunc() || 0,
+                price: price?.data?.result?.list[0]?.indexPrice || searchCoin.price,
+                date: transformDate(date),
+                pricesHistory: [
+                  ...searchCoin.pricesHistory,
+                  { price: price?.data?.result?.list[0]?.indexPrice || 0, date: transformDate(date), priceMovement: proccentFuncRef.current()},
+                ],
               }
             : searchCoin
         )
       );
-    }, 1000); 
+    };
+  }, [coin, price, savedCoins, setSavedCoins]);
 
-    return () => clearInterval(interval);
-  }, [coin, proccentFunc, setSavedCoins])
+  useEffect(() => {
+    const saveCoinInterval = setInterval(() => {
+      console.log("Interval for saveCoin triggered");
+      saveCoinRef.current();
+    }, 60000); // 1 хвилина
 
-  if (price?.data.retCode !== 0 || price.data.retMsg !== "OK")
+    const updateDifferenceInterval = setInterval(() => {
+      console.log("Interval for updateDifference triggered");
+      setSavedCoins((prev) =>
+        prev.map((searchCoin) =>
+          searchCoin.coin === coin
+            ? {
+                ...searchCoin,
+                difference: proccentFuncRef.current() || 0,
+              }
+            : searchCoin
+        )
+      );
+    }, 1000); // 1 секунда
+
+    return () => {
+      clearInterval(saveCoinInterval);
+      clearInterval(updateDifferenceInterval);
+      console.log("Intervals cleared");
+    };
+  }, [coin, setSavedCoins]);
+
+  if (!price || price.data.retCode !== 0 || price.data.retMsg !== "OK") {
     return <div>Такої монети не існує: {coin}</div>;
+  }
 
-  const priceOfCoin = price?.data.result.list[0].indexPrice
+  const priceOfCoin = price?.data?.result?.list[0]?.indexPrice;
 
   return (
-    <div className="" style={{ display: "flex" }}>
-      <div className="">
-        {coin}: {priceOfCoin}
-      </div>
-      <div className="" style={{marginLeft: '10px'}}>({proccentFunc()}%)</div>
+    <div style={{ display: "flex" }}>
+      <div>{coin}: {priceOfCoin}</div>
+      <div style={{ marginLeft: '10px' }}>({proccentFuncRef.current()}%)</div>
     </div>
   );
 };

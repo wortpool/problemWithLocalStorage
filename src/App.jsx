@@ -10,6 +10,9 @@ function App() {
     { coin: "SOLUSD", price: null, difference: null, pricesHistory: [] },
     { coin: "1000PEPEUSDT", price: null, difference: null, pricesHistory: [] },
   ]);
+  
+  // console.log(savedCoins);
+  
 
   const transformDate = (date) => {
     const hours = date.getHours();
@@ -22,16 +25,17 @@ function App() {
   const [historyOfJumping, setHistoryOfJumping] = useState([])
 
   const checkDifference = () => {
-    return savedCoins.every((coin) => coin.difference > 2);
+    return savedCoins.every((coin) => coin.difference > 0.02);
   }
 
   useEffect(() => {
     if(checkDifference()) {
-      setHistoryOfJumping(prev => [...prev, {dynamic: 'plus', time: transformDate(new Date())}])
+      const differences = savedCoins.map(coin => `${coin.coin}: ${coin.difference}`).join(', ');
+      setHistoryOfJumping(prev => [...prev, { move: 'up', difference: differences, time: transformDate(new Date())}])
     }
   }, [savedCoins])
 
-  // console.log("historyOfJumping", historyOfJumping);
+  console.log("historyOfJumping", historyOfJumping);
 
   return (
     <>
