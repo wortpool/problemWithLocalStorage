@@ -1,4 +1,6 @@
 const PricesHistory = ({history}) => {
+
+    
     // console.log(history);
     return ( 
         <div className="">

@@ -22,20 +22,33 @@ function App() {
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  const [historyOfJumping, setHistoryOfJumping] = useState([])
+  const [historyOfAllJumping, setHistoryOfAllJumping] = useState([])
+  const [historyOfSingleJumping, setHistoryOfSingleJumping] = useState([])
 
-  const checkDifference = () => {
-    return savedCoins.every((coin) => coin.difference > 0.02);
+  const checkDifferenceOnAll = () => {
+    return savedCoins.every((coin) => coin.difference > 1.50 || coin.difference < -1.50);
+  }
+
+  const checkDifferenceOnSingle = () => {
+    return savedCoins.filter((coin) => coin.difference > 1.50 || coin.difference < -1.50);
   }
 
   useEffect(() => {
-    if(checkDifference()) {
+    if(checkDifferenceOnAll()) {
+      const movement = savedCoins[0].difference > 0 ? 'up' : 'down';
       const differences = savedCoins.map(coin => `${coin.coin}: ${coin.difference}`).join(', ');
-      setHistoryOfJumping(prev => [...prev, { move: 'up', difference: differences, time: transformDate(new Date())}])
+      setHistoryOfAllJumping(prev => [...prev, { move: movement, difference: differences, time: transformDate(new Date())}])
+    }
+
+    if(checkDifferenceOnSingle().length > 0) {
+      const movement = checkDifferenceOnSingle().difference > 0 ? 'up' : 'down';      
+      const differences = checkDifferenceOnSingle().map(coin => `${coin.coin}: ${coin.difference}`).join(', ');
+      setHistoryOfSingleJumping(prev => [...prev, { move: movement, difference: differences, time: transformDate(new Date())}])
     }
   }, [savedCoins])
 
-  console.log("historyOfJumping", historyOfJumping);
+  console.log("historyOfAllJumping", historyOfAllJumping);
+  console.log("historyOfSingleJumping", historyOfSingleJumping);
 
   return (
     <>
